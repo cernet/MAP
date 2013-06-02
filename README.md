@@ -15,10 +15,10 @@ https://datatracker.ietf.org/doc/draft-ietf-softwire-map-t/
 
 A typical MAP use case is shown in the Figure below.
    
-                     User N
-                   Private IPv4
-                  |  Network
-                  |
+                       User N
+                    Private IPv4
+                   |  Network
+                   |
                 o--+---------------O
                 |  |  MAP CE       |
                 | +-----+--------+ |
