@@ -2,7 +2,7 @@ MAP
 =======
 
 
-MAP is an open source implementation of draft-ietf-softwire-map and
+MAP is an open source CPE implementation of draft-ietf-softwire-map and
 draft-ietf-softwire-map-t. It runs on Linux and Openwrt.
 
 MAP is a mechanism for transporting IPv4 packets across an IPv6 network
@@ -14,50 +14,42 @@ https://datatracker.ietf.org/doc/draft-ietf-softwire-map-t/
 
 
 A typical MAP use case is shown in the Figure below.
-
-
-import com.github.mdr.ascii.layout._
-
-    val graph = Graph(
-      vertices = List(
-        "V1", "V2", "V3", "V4", "V5", "V6", "V7"),
-      edges = List(
-        "V1" -> "V2",
-        "V7" -> "V1",
-        "V1" -> "V3",
-        "V1" -> "V4",
-        "V2" -> "V5",
-        "V2" -> "V6"))
-
-    val ascii = Layouter.renderGraph(graph)
-
-    println(ascii)
-    
-    
    
-         User N
-       Private IPv4
-      |  Network
-      |
-   O--+---------------O
-   |  |  MAP CE       |
-   | +-----+--------+ |
-   | NAPT44|  MAP   | |
-   | +-----+      | | |\    ,--------,                       .~------.
-   |       +--------+ | \ ,'          '.                    '         `-.
-   O------------------O  /              \   O---------O    /             \
-                        |   IPv6 only    |  |   MAP   |   /    Public     \
-                        |    Network     |--+  Border +- (       IPv4      )
-                        |  (MAP Domain)  |  |  Relay  |   \    Network    /
-   O------------------O  \              /   O---------O    \             /
-   |    MAP   CE      |  /".          ,'                    `.         ,'
-   | +-----+--------+ | /   `----+--'`                         '------'
-   | NAPT44|  MAP   | |/
-   | +-----+        | |
-   |   |   +--------+ |
-   O---.--------------O
-       |
-        User M
-      Private IPv4
-        Network
+                     User N
+                   Private IPv4
+                  |  Network
+                  |
+                o--+---------------O
+                |  |  MAP CE       |
+                | +-----+--------+ |
+                | NAPT44|  MAP   | |
+                | +-----+      | | |\    ,--------,                        ,~-----------,
+                |       +--------+ | \ ,'          '.                    ,'              `,
+                O------------------O  /              \   O---------O    /                  \   
+                                     |   IPv6 only    |  |   MAP   |   /       Public       \
+                                     |    Network     |--+  Border +- (         IPv4         )
+                                     |  (MAP Domain)  |  |  Relay  |   \       Network      /
+                O------------------O  \              /   O---------O    \                  /
+                |    MAP   CE      |  /".          ,'                    `.              ,'
+                | +-----+--------+ | /   `----+--'`                         '-----------'
+                | NAPT44|  MAP   | |/
+                | +-----+        | |
+                |   |   +--------+ |
+                O---.--------------O
+                    |
+                     User M
+                  Private IPv4
+                    Network
+
+### Interoperation and Backwards Compatibility
+
+This implementation is used on MAP CE and can be configured with/without NAPT44 function. 
+The interoperation between this implementation and Cisco ASR 1K/9K has been tested 
+successfully with either encapsulation mode or translation mode.
+See http://blogs.cisco.com/sp/real-world-demonstration-of-map-for-ipv6/ for more details.
+
+Moreover, we have tested the CE implementation in CERNET/CERNET2 environment and the result
+shows that a unified MAP CE can be configured to support MAP-T, MAP-E, mixed MAP-T/MAP-E, 
+and backward compatible with stateless NAT64, stateful NAT64 and dual-stack lite. Please refer to
+http://datatracker.ietf.org/doc/draft-xli-softwire-map-testing for further reading.
 
