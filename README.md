@@ -11,3 +11,33 @@ mechanism for mapping between IPv6 addresses and IPv4 addresses and
 transport layer ports. It is defined in
 https://datatracker.ietf.org/doc/draft-ietf-softwire-map/ and
 https://datatracker.ietf.org/doc/draft-ietf-softwire-map-t/
+
+
+A typical MAP use case is shown in the Figure below.
+   
+         User N
+       Private IPv4
+      |  Network
+      |
+   O--+---------------O
+   |  |  MAP CE       |
+   | +-----+--------+ |
+   | NAPT44|  MAP   | |
+   | +-----+      | | |\    ,--------,                       .~------.
+   |       +--------+ | \ ,'          '.                    '         `-.
+   O------------------O  /              \   O---------O    /             \
+                        |   IPv6 only    |  |   MAP   |   /    Public     \
+                        |    Network     |--+  Border +- (       IPv4      )
+                        |  (MAP Domain)  |  |  Relay  |   \    Network    /
+   O------------------O  \              /   O---------O    \             /
+   |    MAP   CE      |  /".          ,'                    `.         ,'
+   | +-----+--------+ | /   `----+--'`                         '------'
+   | NAPT44|  MAP   | |/
+   | +-----+        | |
+   |   |   +--------+ |
+   O---.--------------O
+       |
+        User M
+      Private IPv4
+        Network
+
