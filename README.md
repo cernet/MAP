@@ -14,6 +14,26 @@ https://datatracker.ietf.org/doc/draft-ietf-softwire-map-t/
 
 
 A typical MAP use case is shown in the Figure below.
+
+
+import com.github.mdr.ascii.layout._
+
+    val graph = Graph(
+      vertices = List(
+        "V1", "V2", "V3", "V4", "V5", "V6", "V7"),
+      edges = List(
+        "V1" -> "V2",
+        "V7" -> "V1",
+        "V1" -> "V3",
+        "V1" -> "V4",
+        "V2" -> "V5",
+        "V2" -> "V6"))
+
+    val ascii = Layouter.renderGraph(graph)
+
+    println(ascii)
+    
+    
    
          User N
        Private IPv4
