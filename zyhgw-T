@@ -1,0 +1,6 @@
+#!/bin/sh
+
+./control start
+utils/ivictl -r -d -P 2001:da8:b001:ffff::/64 -T
+utils/ivictl -s -i eth1 -I eth0 -H -a 202.38.102.130/28 -P 2001:da8:b001::/48 -z 4 -R 16 -o 1 -c 1400 -T
+

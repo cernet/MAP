@@ -1,0 +1,15 @@
+
+default-lease-time 600;
+max-lease-time 7200;
+
+option subnet-mask         255.255.255.240;
+option broadcast-address   202.38.102.143;
+option routers             202.38.102.129;
+option domain-name-servers 202.38.102.129;
+
+option domain-name "net.edu.cn";
+
+subnet 202.38.102.128  netmask 255.255.255.240 {
+	range 202.38.102.130 202.38.102.130;
+}
+

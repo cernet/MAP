@@ -1,0 +1,119 @@
+MAP-T/MAP-E Module Installation And Usage Manual
+
+Notice: This code package currently supports the translation 
+of TCP, UDP and ICMP Query packets with two working modes: CE, 
+CE with NAT44. Anyone may contribute to add more 
+functionalities to this code under the license of GPL.
+
+Part I: building binaries from source
+
+To build the source codes, follow the steps below:
+
+1) Enter './modules/' directory;
+2) Run 'make' command to build kernel modules;
+3) Switch to './utils/' directory;
+4) Run 'make' command to build 'ivictl' command line utility;
+
+Part II: install & remove the module
+
+Currently the MAP-T/MAP-E module does not need special installation steps. It 
+is suggested that you directly start the module using shell scripts located in 
+'./scripts/' directory. Those scripts will install and start the module 
+automatically. You may copy or move those scripts to other locations but pay 
+attention to the relative directory references in the scripts. 
+
+The module installation is actually performed by the script command 'control 
+start', which will call 'insmod' to insert the kernel module 'ivi.ko' and then 
+call 'mknod' to create a charactor device interface in '/dev' directory for 
+IOCTL purpose.
+
+The module is removed by the script command 'control stop', which will call 
+'rmmod' to remove the kernel module 'ivi.ko' and then call 'rm' to remove the 
+charactor device interface from the '/dev' directory.
+
+The module start and stop is performed by calling 'ivictl' command. See Part 
+III for the usage of 'ivictl' tool.
+
+
+Part III: 'ivictl' usage
+
+The MAP-T/MAP-E functionality is controlled via 'ivictl' utility. This command 
+line tool allows you to configure mapping rules (through 'ivictl -r ...' 
+command), start (through 'ivictl -s ...' command) or stop (through 'ivictl -q' 
+command) packet translation. You can also view the usage instructions through 
+'ivictl -h' command.
+
+1) Configure mapping rule
+
+To configure a mapping rule, the following options are used:
+
+-p: specify the IPv4 rule prefix and prefix length in the form of 'a.b.c.d/l'
+-d: specify the default mapping rule, either '-p' or '-d' must be specified
+-P: specify the corresponding IPv6 rule prefix and prefix length in the form of 
+    'a:b:c:d::/l', must be specified
+-z: specify the psid offset, default value is 6.
+-R: specify the associated IPv4 address sharing ratio R used in GMA, default 
+    value is 1
+-T  translation(MAP-T) 
+-E  encapsulation(MAP-E)
+
+For example, a mapping rule '1.1.1.0/24 -> 2001:da8:abc::/48, R = 16, PSID offset = 4' is 
+configured via:
+
+ivictl -r -p 1.1.1.0/24 -P 2001:da8:abc::/48 -z 4 -R 16 -T
+
+
+2) Start packet translation
+
+The MAP module support two working mode: CE mode and CE 
+with NAT44 mode, both for translation and encpasulation
+
+To start the module in BR mode, the following options are used:
+
+-i: specify the name of the Ethernet device connected to IPv4 world
+-I: specify the name of the Ethernet device connected to IPv6 world
+
+Remember that you MUST configure correct mapping rules before starting BR mode. 
+At least two mapping rules (the DMR and the BMR) are necessary.
+
+
+To start the module in CE mode, the following options are required:
+
+-i: specify the name of the Ethernet device connected to IPv4 world
+-I: specify the name of the Ethernet device connected to IPv6 world
+-H: specify that we are in HGW mode
+-a: specify the IPv4 address and mask of the host behind the CE device, in the 
+    form of 'a.b.c.d/l'
+-P: specify the IPv6 rule prefix and prefix length of the host behind the CE 
+    device, in the form of 'a:b:c:d::/l'
+-R: specify the associated IPv4 address sharing ratio R of the host behind the 
+    CE device
+-z: specify the psid offset
+-o: specify the PSID of the host behind the CE device
+-T  translation (MAP-T)
+-E  encapsulation (MAP-E)
+
+
+Remember that you MUST configure the DMR before starting CE mode.
+
+
+To start the module in CE with NAT44 mode, the additional necessary options are 
+as follows:
+
+-A: specify the public IPv4 address and mask which the host behind the CE 
+    device is mapped into. In this case, the '-a' option will specify the 
+    private IPv4 network and prefix length
+-N: specify that we are in NAT44 mode
+
+
+'./scripts/' directory contains real configuration examples for these working 
+modes.
+
+3) Stop packet translation
+
+This is easy. Simply run 'ivictl -q' command.
+
+
+If you have any question regarding the usage of the source code and the MAP-T/MAP-E
+module, feel free to contact the authors via email.
+
