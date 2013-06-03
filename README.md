@@ -49,7 +49,7 @@ successfully with either encapsulation mode or translation mode.
 See http://blogs.cisco.com/sp/real-world-demonstration-of-map-for-ipv6/ for more details.
 
 Moreover, we have tested the CE implementation in CERNET/CERNET2 environment and the result
-shows that a unified MAP CE can be configured to support MAP-T, MAP-E, mixed MAP-T/MAP-E, 
+shows that a unified MAP CE can be configured to support MAP-T, MAP-E, 
 and backward compatible with stateless NAT64, stateful NAT64 and dual-stack lite. Please refer to
 http://datatracker.ietf.org/doc/draft-xli-softwire-map-testing for further reading.
 
