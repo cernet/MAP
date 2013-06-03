@@ -34,11 +34,6 @@
  * LIC: GPLv3
  *
  ************************************************************************/
- * Contents      :
- *    This file is the header file for the 'ivi_map.c' file,
- *    which contains all the system header files and definitions
- *    used in the 'ivi_map.c' file.
- *
 
 #ifndef IVI_MAP_H
 #define IVI_MAP_H
