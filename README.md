@@ -53,3 +53,14 @@ shows that a unified MAP CE can be configured to support MAP-T, MAP-E,
 and backward compatible with stateless NAT64, stateful NAT64 and dual-stack lite. Please refer to
 http://datatracker.ietf.org/doc/draft-xli-softwire-map-testing for further reading.
 
+### A Short Instruction on the Usage of MAP
+
+In the repository, the directory 'modules' contains the code for generating the MAP kernel module,
+while the directory 'utils' contains an utility to configure MAP parameters. 
+You can read 'readme' for the detailed usage of the utility.
+
+As four examples, script files 'zyhgw-T44' and 'zyhgw-T' show how to configure the translation mode
+with/without NAT44;
+while 'zyhgw-E44' and 'zyhgw-E' show how to configure the encapsulation mode with/without NAT44.
+To stop the module, just execute the script file 'stopall'.
+
