@@ -18,6 +18,7 @@ ip -6 route add default via 2001:da8:aaaf:1000::1 dev eth0
 ifconfig eth1 down
 ifconfig eth1 up
 ifconfig eth1 192.168.1.1/24
+ip route add default dev eth1
 #ifconfig eth1 202.38.102.129/30
 ip -6 addr add 2001:da8:b001:2000::1/64 dev eth1
 

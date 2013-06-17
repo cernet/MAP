@@ -268,70 +268,6 @@ static int ipaddr_6to4(struct in6_addr *v6addr, u8 _dir, unsigned int *v4addr, u
 	return retval;
 }
 
-static int ivi_send_icmp_time_exceeded(struct sk_buff *skb) {
-	struct sk_buff *newskb;
-	struct ethhdr *old_eth4, *new_eth4;
-	struct iphdr *old_ip4h, *new_ip4h;
-	struct in_device *dev4_ipaddr;
-	struct icmphdr *icmph;
-	__u8 *payload;
-	int retval;
-	
-	if (!(newskb = dev_alloc_skb(2 + ETH_HLEN + 576))) { 
-		// ICMPv4 error message should not exceed 576 bytes. See RFC1812.
-		printk(KERN_ERR "ivi_send_icmp_time_exceeded: failed to allocate new socket buffer.\n");
-		return 0;  // Drop packet on low memory
-	}
-	skb_reserve(newskb, 2);  // Align IP header on 16 byte boundary (ETH_LEN + 2)
-
-	old_eth4 = eth_hdr(skb);
-	new_eth4 = (struct ethhdr *)skb_put(newskb, ETH_HLEN);
-	memcpy(new_eth4->h_dest, old_eth4->h_source, ETH_ALEN);
-	memcpy(new_eth4->h_source, old_eth4->h_dest, ETH_ALEN);
-	new_eth4->h_proto = __constant_ntohs(ETH_P_IP);
-
-	old_ip4h = ip_hdr(skb);
-	new_ip4h = (struct iphdr *)skb_put(newskb, sizeof(struct iphdr));
-	*(__u16 *)new_ip4h = __constant_htons(0x4500);
-	new_ip4h->tot_len = htons(ntohs(old_ip4h->tot_len) + 28 > 576 ? 576 : ntohs(old_ip4h->tot_len) + 28);
-	new_ip4h->id = 0;
-	new_ip4h->frag_off = htons(0x4000); // DF=1
-	new_ip4h->ttl = 255;
-	new_ip4h->protocol = IPPROTO_ICMP;
-	new_ip4h->check = 0;
-	new_ip4h->daddr = old_ip4h->saddr;
-	dev4_ipaddr = (struct in_device *)v4_dev->ip_ptr;
-	if (dev4_ipaddr == NULL || dev4_ipaddr->ifa_list == NULL) {
-		kfree_skb(newskb);
-		return 0;
-	}
-	new_ip4h->saddr = dev4_ipaddr->ifa_list->ifa_address;
-	new_ip4h->check = ip_fast_csum((__u8 *)new_ip4h, new_ip4h->ihl);
-
-	icmph = (struct icmphdr *)(skb_put(newskb, sizeof(struct icmphdr)));
-	icmph->type = ICMP_TIME_EXCEEDED;
-	icmph->code = ICMP_EXC_TTL;
-	icmph->checksum = 0;
-	memset((__u8 *)icmph + 4, 0, 4);
-
-	if (ntohs(old_ip4h->tot_len) + 28 > 576) {
-		payload = (__u8 *)skb_put(newskb, 548);
-		skb_copy_bits(skb, 0, payload, 548);
-		icmph->checksum = ip_compute_csum(icmph, 556);
-	} else {
-		payload = (__u8 *)skb_put(newskb, ntohs(old_ip4h->tot_len));
-		skb_copy_bits(skb, 0, payload, ntohs(old_ip4h->tot_len));
-		icmph->checksum = ip_compute_csum(icmph, ntohs(old_ip4h->tot_len) + 8);
-	}
-	newskb->protocol = eth_type_trans(newskb, skb->dev);
-	newskb->data = (unsigned char *)new_eth4;
-	newskb->len += ETH_HLEN;
-	newskb->ip_summed = CHECKSUM_NONE;
-
-	retval = dev_queue_xmit(newskb);
-	return retval;
-}
-
 int ivi_v4v6_xmit(struct sk_buff *skb) {
 	struct sk_buff *newskb;
 	struct ethhdr *eth4, *eth6;
@@ -376,8 +312,7 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 	}
 
 	if (ip4h->ttl <= 1) {
-		retval = ivi_send_icmp_time_exceeded(skb);
-		return retval;
+		return -EINVAL;  // Just accept.
 	}
 	
 	plen = ntohs(ip4h->tot_len) - (ip4h->ihl * 4);
