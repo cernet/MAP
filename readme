@@ -90,8 +90,9 @@ To start the module in CE mode, the following options are required:
     CE device
 -z: specify the psid offset
 -o: specify the PSID of the host behind the CE device
--T  translation (MAP-T)
--E  encapsulation (MAP-E)
+-T: translation (MAP-T)
+-E: encapsulation (MAP-E)
+-c: MSS clamping to avoid the MTU problem along the path.
 
 
 Remember that you MUST configure the DMR before starting CE mode.
