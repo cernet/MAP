@@ -281,7 +281,6 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 	unsigned int hlen, plen;
 	u16 newp, s_port, d_port;
 	u8 transport;
-	int retval;
 	char flag_udp_nullcheck;
 	
 	eth4 = eth_hdr(skb);
@@ -335,7 +334,11 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 				}
 			}
 			
-			if (get_outflow_tcp_map_port(ntohl(ip4h->saddr), ntohs(tcph->source), ntohl(ip4h->daddr), \
+			if (ivi_mode == IVI_MODE_HGW && ntohs(tcph->source) < 1024) {
+				newp = ntohs(tcph->source);
+			}
+			
+			else if (get_outflow_tcp_map_port(ntohl(ip4h->saddr), ntohs(tcph->source), ntohl(ip4h->daddr), \
 				ntohs(tcph->dest), hgw_ratio, hgw_adjacent, hgw_offset, tcph, plen, &newp) == -1) {
 #ifdef IVI_DEBUG
 				printk(KERN_ERR "ivi_v4v6_xmit: fail to perform nat44 mapping for " NIP4_FMT \
@@ -343,15 +346,15 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 #endif
 				return 0; // silently drop
 					
-			} else {
-				if (ivi_mode == IVI_MODE_HGW_NAT44) {
-					csum_replace4(&tcph->check, ip4h->saddr, htonl(v4publicaddr));
-					csum_replace4(&ip4h->check, ip4h->saddr, htonl(v4publicaddr));
-					ip4h->saddr = htonl(v4publicaddr);
-				}
-				csum_replace2(&tcph->check, tcph->source, htons(newp));
-				tcph->source = htons(newp);
 			}
+			
+			if (ivi_mode == IVI_MODE_HGW_NAT44) {
+				csum_replace4(&tcph->check, ip4h->saddr, htonl(v4publicaddr));
+				csum_replace4(&ip4h->check, ip4h->saddr, htonl(v4publicaddr));
+				ip4h->saddr = htonl(v4publicaddr);
+			}
+			csum_replace2(&tcph->check, tcph->source, htons(newp));
+			tcph->source = htons(newp);
 			s_port = ntohs(tcph->source);
 			d_port = ntohs(tcph->dest);
 
@@ -362,7 +365,11 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 			if (udph->check == 0) 
 				flag_udp_nullcheck = 1;
 			
-			if (get_outflow_map_port(&udp_list, ntohl(ip4h->saddr), ntohs(udph->source), \
+			if (ivi_mode == IVI_MODE_HGW && ntohs(udph->source) < 1024) {
+				newp = ntohs(udph->source);
+			}
+			
+			else if (get_outflow_map_port(&udp_list, ntohl(ip4h->saddr), ntohs(udph->source), \
 				ntohl(ip4h->daddr), hgw_ratio, hgw_adjacent, hgw_offset, &newp) == -1) {
 #ifdef IVI_DEBUG
 				printk(KERN_ERR "ivi_v4v6_xmit: fail to perform nat44 mapping for " NIP4_FMT \
@@ -370,19 +377,19 @@ int ivi_v4v6_xmit(struct sk_buff *skb) {
 #endif
 				return 0; // silently drop
 				
-			} else {
-				if (ivi_mode == IVI_MODE_HGW_NAT44) {
-					if (!flag_udp_nullcheck) {
-						csum_replace4(&udph->check, ip4h->saddr, htonl(v4publicaddr));
-					}
-					csum_replace4(&ip4h->check, ip4h->saddr, htonl(v4publicaddr));
-					ip4h->saddr = htonl(v4publicaddr);
-				}
+			} 
+			
+			if (ivi_mode == IVI_MODE_HGW_NAT44) {
 				if (!flag_udp_nullcheck) {
-					csum_replace2(&udph->check, udph->source, htons(newp));
+					csum_replace4(&udph->check, ip4h->saddr, htonl(v4publicaddr));
 				}
-				udph->source = htons(newp);
+				csum_replace4(&ip4h->check, ip4h->saddr, htonl(v4publicaddr));
+				ip4h->saddr = htonl(v4publicaddr);
 			}
+			if (!flag_udp_nullcheck) {
+				csum_replace2(&udph->check, udph->source, htons(newp));
+			}
+			udph->source = htons(newp);
 			s_port = ntohs(udph->source);
 			d_port = ntohs(udph->dest);
 
@@ -650,7 +657,12 @@ int ivi_v6v4_xmit(struct sk_buff *skb) {
 					return 0;
 				}
 				
-				if (get_inflow_tcp_map_port(ntohs(tcph->dest), ntohl(ip4h->saddr), ntohs(tcph->source), \
+				if (ivi_mode == IVI_MODE_HGW && ntohs(tcph->dest) < 1024) {
+					oldaddr = ntohl(ip4h->daddr);
+					oldp = ntohs(tcph->dest);
+				}
+				
+				else if (get_inflow_tcp_map_port(ntohs(tcph->dest), ntohl(ip4h->saddr), ntohs(tcph->source), \
 				                            tcph, plen, &oldaddr, &oldp) == -1) {
 					//printk(KERN_ERR "ivi_v6v4_xmit: fail to perform nat44 mapping for %d (TCP).\n",
 					//	               ntohs(tcph->dest));
@@ -687,7 +699,12 @@ int ivi_v6v4_xmit(struct sk_buff *skb) {
 					return 0;
 				}
 				
-				if (get_inflow_map_port(&udp_list,  ntohs(udph->dest), ntohl(ip4h->saddr), \
+				if (ivi_mode == IVI_MODE_HGW && ntohs(udph->dest) < 1024) {
+					oldaddr = ntohl(ip4h->daddr);
+					oldp = ntohs(udph->dest);
+				}
+				
+				else if (get_inflow_map_port(&udp_list,  ntohs(udph->dest), ntohl(ip4h->saddr), \
 				                        &oldaddr, &oldp) == -1) {
 					//printk(KERN_ERR "ivi_v6v4_xmit: fail to perform nat44 mapping for %d (UDP).\n",
 					//                 ntohs(udph->dest));	
@@ -803,10 +820,15 @@ int ivi_v6v4_xmit(struct sk_buff *skb) {
 					return 0;
 				}
 				
-				if (get_inflow_tcp_map_port(ntohs(tcph->dest), ntohl(ip4h->saddr), ntohs(tcph->source), \
+				if (ivi_mode == IVI_MODE_HGW && ntohs(tcph->dest) < 1024) {
+					oldaddr = ntohl(ip4h->daddr);
+					oldp = ntohs(tcph->dest);
+				}
+				
+				else if (get_inflow_tcp_map_port(ntohs(tcph->dest), ntohl(ip4h->saddr), ntohs(tcph->source), \
 				                            tcph, plen, &oldaddr, &oldp) == -1) {
 					//printk(KERN_ERR "ivi_v6v4_xmit: fail to perform nat44 mapping for %d (TCP).\n", 
-					//                 ntohs(tcph->dest));
+					//                 ntohs(tcph->dest));                 
 					kfree_skb(newskb);
 					return 0;
 				} 
@@ -839,7 +861,12 @@ int ivi_v6v4_xmit(struct sk_buff *skb) {
 					return 0;
 				}
 					
-				if (get_inflow_map_port(&udp_list, ntohs(udph->dest), ntohl(ip4h->saddr), \
+				if (ivi_mode == IVI_MODE_HGW && ntohs(udph->dest) < 1024) {
+					oldaddr = ntohl(ip4h->daddr);
+					oldp = ntohs(udph->dest);
+				}
+					
+				else if (get_inflow_map_port(&udp_list, ntohs(udph->dest), ntohl(ip4h->saddr), \
 				                        &oldaddr, &oldp) == -1) {
 					//printk(KERN_ERR "ivi_v6v4_xmit: fail to perform nat44 mapping for %d (UDP).\n", ntohs(udph->dest));
 					kfree_skb(newskb);

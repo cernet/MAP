@@ -219,7 +219,7 @@ int get_outflow_map_port(struct map_list *list, __be32 oldaddr, __be16 oldp, __b
 	retport = 0;
 	ratio = fls(ratio) - 1;
 	adjacent = fls(adjacent) - 1;
-	start_port = 1 << (ratio + adjacent); // the ports below start_port are reserved for system ports.
+	start_port = ((1 << (ratio + adjacent)) > 1024) ? 1 << (ratio + adjacent) : 1024; // the ports below start_port are reserved for system ports.
 	
 	refresh_map_list(list);
 	spin_lock_bh(&list->lock);

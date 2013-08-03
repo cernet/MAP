@@ -1103,7 +1103,7 @@ int get_outflow_tcp_map_port(__be32 oldaddr, __be16 oldp, __be32 dstaddr, __be16
 	status = 0;
 	ratio = fls(ratio) - 1;
 	adjacent = fls(adjacent) - 1;
-	start_port = 1 << (ratio + adjacent); // the ports below start_port are reserved for system ports.
+	start_port = ((1 << (ratio + adjacent)) > 1024) ? 1 << (ratio + adjacent) : 1024; // the ports below start_port are reserved for system ports.
 	
 	refresh_tcp_map_list(0);
 	spin_lock_bh(&tcp_list.lock);

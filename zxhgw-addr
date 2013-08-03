@@ -9,17 +9,17 @@ echo 0 > /proc/sys/net/ipv4/conf/eth0/rp_filter
 echo 0 > /proc/sys/net/ipv4/conf/eth1/rp_filter
 
 # configure eth0 -- IPv6 interface
-ifconfig eth0 down
-ifconfig eth0 up
+#ifconfig eth0 down
+#ifconfig eth0 up
 ip -6 addr add 2001:da8:aaaf:1000::2/64 dev eth0
 ip -6 route add default via 2001:da8:aaaf:1000::1 dev eth0
 
 # configure eth1 -- IPv4 interface
-ifconfig eth1 down
-ifconfig eth1 up
-ifconfig eth1 192.168.1.1/24
+#ifconfig eth1 down
+#ifconfig eth1 up
+#ifconfig eth1 192.168.1.1/24
 ip route add default dev eth1
-#ifconfig eth1 202.38.102.129/30
+ifconfig eth1 202.38.102.129/30
 ip -6 addr add 2001:da8:b001:2000::1/64 dev eth1
 
 dhcpd -cf /etc/dhcpd.conf
