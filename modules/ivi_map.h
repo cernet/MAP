@@ -31,7 +31,7 @@
  * For more versions, please send an email to <bupthgl@gmail.com> to
  * obtain an password to access the svn server.
  *
- * LIC: GPLv3
+ * LIC: GPLv2
  *
  ************************************************************************/
 
