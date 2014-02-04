@@ -2,8 +2,8 @@
 
 start() {
 	if [ ! -f modules/ivi.ko ] ; then
-		echo "Error: please make modules first."
-		exit 1
+		make -C modules
+		make -C utils
 	fi
 	if ( lsmod | grep "ivi" ) ; then
 		echo "Error: modules exist, run 'control restart' instead."
