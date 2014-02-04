@@ -163,18 +163,19 @@ static int ipaddr_4to6(unsigned int *v4addr, u16 port, u8 _dir, struct in6_addr 
 
 	if (fmt == ADDR_FMT_MAPT) {
 		if ((prefixlen << 3) + ealen <= 64) {
-  			o = 24 + remainder; // initial offset for the first uncompleted byte
-  			for (i = prefixlen; i < 8; i++) { // eabits outside /64 are cutted
- 				v6addr->s6_addr[i] += (unsigned char)((eabits >> o) & 0xff);
- 				o -= 8;
-  			}
-  			v6addr->s6_addr[8] = 0x00;
-			v6addr->s6_addr[9] = (unsigned char)(addr >> 24);
-			v6addr->s6_addr[10] = (unsigned char)((addr >> 16) & 0xff);
-			v6addr->s6_addr[11] = (unsigned char)((addr >> 8) & 0xff);
-			v6addr->s6_addr[12] = (unsigned char)(addr & 0xff);
-			v6addr->s6_addr[13] = (suffix >> 8) & 0xff;
-			v6addr->s6_addr[14] = suffix & 0xff;
+			o = 24 + remainder; // initial offset for the first uncompleted byte
+			for (i = prefixlen; i < 8; i++) { // eabits outside /64 are cutted
+				v6addr->s6_addr[i] += (unsigned char)((eabits >> o) & 0xff);
+				o -= 8;
+			}
+			v6addr->s6_addr[8] = 0x00;
+			v6addr->s6_addr[9] = 0x00;
+			v6addr->s6_addr[10] = (unsigned char)(addr >> 24);
+			v6addr->s6_addr[11] = (unsigned char)((addr >> 16) & 0xff);
+			v6addr->s6_addr[12] = (unsigned char)((addr >> 8) & 0xff);
+			v6addr->s6_addr[13] = (unsigned char)(addr & 0xff);
+			v6addr->s6_addr[14] = (suffix >> 8) & 0xff;
+			v6addr->s6_addr[15] = suffix & 0xff;
 		} else {
 #ifdef IVI_DEBUG_RULE
 			printk(KERN_DEBUG "ipaddr_4to6: cannot map v4 addr " NIP4_FMT \
@@ -184,18 +185,18 @@ static int ipaddr_4to6(unsigned int *v4addr, u16 port, u8 _dir, struct in6_addr 
 		}
 	} else if (fmt == ADDR_FMT_MAPX_CPE) {
 		// this format has no eabits
-		v6addr->s6_addr[9] = (unsigned char)(addr >> 24);
-		v6addr->s6_addr[10] = (unsigned char)((addr >> 16) & 0xff);
-		v6addr->s6_addr[11] = (unsigned char)((addr >> 8) & 0xff);
-		v6addr->s6_addr[12] = (unsigned char)(addr & 0xff);
-		v6addr->s6_addr[13] = (suffix >> 8) & 0xff;
-		v6addr->s6_addr[14] = suffix & 0xff;
+		v6addr->s6_addr[10] = (unsigned char)(addr >> 24);
+		v6addr->s6_addr[11] = (unsigned char)((addr >> 16) & 0xff);
+		v6addr->s6_addr[12] = (unsigned char)((addr >> 8) & 0xff);
+		v6addr->s6_addr[13] = (unsigned char)(addr & 0xff);
+		v6addr->s6_addr[14] = (suffix >> 8) & 0xff;
+		v6addr->s6_addr[15] = suffix & 0xff;
 	} else {
 		// DMR translation: just copy the addr
-		v6addr->s6_addr[9] = (unsigned char)(addr >> 24);
-		v6addr->s6_addr[10] = (unsigned char)((addr >> 16) & 0xff);
-		v6addr->s6_addr[11] = (unsigned char)((addr >> 8) & 0xff);
-		v6addr->s6_addr[12] = (unsigned char)(addr & 0xff);
+		v6addr->s6_addr[10] = (unsigned char)(addr >> 24);
+		v6addr->s6_addr[11] = (unsigned char)((addr >> 16) & 0xff);
+		v6addr->s6_addr[12] = (unsigned char)((addr >> 8) & 0xff);
+		v6addr->s6_addr[13] = (unsigned char)(addr & 0xff);
 	}
 
 	return 0;
@@ -226,10 +227,10 @@ static int ipaddr_6to4(struct in6_addr *v6addr, u8 _dir, unsigned int *v4addr, u
 		return -1;
 	}
 	
-	addr |= ((unsigned int)v6addr->s6_addr[9]) << 24;
-	addr |= ((unsigned int)v6addr->s6_addr[10]) << 16;
-	addr |= ((unsigned int)v6addr->s6_addr[11]) << 8;
-	addr |= ((unsigned int)v6addr->s6_addr[12]);
+	addr |= ((unsigned int)v6addr->s6_addr[10]) << 24;
+	addr |= ((unsigned int)v6addr->s6_addr[11]) << 16;
+	addr |= ((unsigned int)v6addr->s6_addr[12]) << 8;
+	addr |= ((unsigned int)v6addr->s6_addr[13]);
 	*v4addr = htonl(addr);
 
 	if (_dir == ADDR_DIR_DST) {		
@@ -260,7 +261,7 @@ static int ipaddr_6to4(struct in6_addr *v6addr, u8 _dir, unsigned int *v4addr, u
 
 		/* offset is obtained from Interface Identifier */	
 		if (fmt == ADDR_FMT_MAPT)
-			*offset = (v6addr->s6_addr[13] << 8) + v6addr->s6_addr[14];
+			*offset = (v6addr->s6_addr[14] << 8) + v6addr->s6_addr[15];
 		else if (fmt == ADDR_FMT_NONE)
 			*offset = 0;
 	}
