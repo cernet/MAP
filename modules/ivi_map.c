@@ -81,11 +81,10 @@ static int port_in_use(__be16 port, struct map_list *list)
 	int ret = 0;
 	int hash;
 	struct map_tuple *iter;
-	struct hlist_node *temp;
 
 	hash = port_hashfn(port);
 	if (!hlist_empty(&list->in_chain[hash])) {
-		hlist_for_each_entry(iter, temp, &list->in_chain[hash], in_node) {
+		hlist_for_each_entry(iter, &list->in_chain[hash], in_node) {
 			if (iter->newport == port) {
 				ret = 1;
 				break;
@@ -130,7 +129,6 @@ void refresh_map_list(struct map_list *list)
 {
 	struct map_tuple *iter, *i0;
 	struct hlist_node *loop, *l0;
-	struct hlist_node *temp, *t0;
 	struct timeval now;
 	time_t delta;
 	int i, flag;	
@@ -139,7 +137,7 @@ void refresh_map_list(struct map_list *list)
 	spin_lock_bh(&list->lock);
 	// Iterate all the map_tuple through out_chain only, in_chain contains the same info.
 	for (i = 0; i < IVI_HTABLE_SIZE; i++) {
-		hlist_for_each_entry_safe(iter, loop, temp, &list->out_chain[i], out_node) {
+		hlist_for_each_entry_safe(iter, loop, &list->out_chain[i], out_node) {
 			delta = now.tv_sec - iter->timer.tv_sec;
 			if (delta >= list->timeout) {
 #ifdef IVI_DEBUG_MAP
@@ -152,7 +150,7 @@ void refresh_map_list(struct map_list *list)
 				list->size--;
 
 				flag = 0; // indicating whether list->port_num needs to be substracted by 1.
- 				hlist_for_each_entry_safe(i0, l0, t0, &list->in_chain[port_hashfn(iter->newport)], in_node) {
+ 				hlist_for_each_entry_safe(i0, l0, &list->in_chain[port_hashfn(iter->newport)], in_node) {
  					if (i0->newport == iter->newport) {
 #ifdef IVI_DEBUG_MAP
  						printk(KERN_INFO "refresh_map_list: newport %d is still used by someone(" NIP4_FMT ":%d -> " NIP4_FMT "). port_num is still %d\n", iter->newport, NIP4(i0->oldaddr), i0->oldport, NIP4(i0->dstaddr), list->port_num);
@@ -180,13 +178,12 @@ void free_map_list(struct map_list *list)
 {
 	struct map_tuple *iter;
 	struct hlist_node *loop;
-	struct hlist_node *temp;
 	int i;
 	
 	spin_lock_bh(&list->lock);
 	// Iterate all the map_tuple through out_chain only, in_chain contains the same info.
 	for (i = 0; i < IVI_HTABLE_SIZE; i++) {
-		hlist_for_each_entry_safe(iter, loop, temp, &list->out_chain[i], out_node) {		
+		hlist_for_each_entry_safe(iter, loop, &list->out_chain[i], out_node) {		
 			hlist_del(&iter->out_node);
 			hlist_del(&iter->in_node);
 			hlist_del(&iter->dest_node);
@@ -211,7 +208,6 @@ int get_outflow_map_port(struct map_list *list, __be32 oldaddr, __be16 oldp, __b
 	struct map_tuple *multiplex_state;
 	struct map_tuple *iter;
 	struct hlist_node *loop;
-	struct hlist_node *temp;
 		
 	*newp = 0;
 	reusing = 0;
@@ -226,7 +222,7 @@ int get_outflow_map_port(struct map_list *list, __be32 oldaddr, __be16 oldp, __b
 	
 	hash = v4addr_port_hashfn(oldaddr, oldp);
 	if (!hlist_empty(&list->out_chain[hash])) {
-		hlist_for_each_entry(iter, temp, &list->out_chain[hash], out_node) {
+		hlist_for_each_entry(iter, &list->out_chain[hash], out_node) {
 			if (iter->oldport == oldp && iter->oldaddr == oldaddr) {
 				if (iter->dstaddr == dstaddr) {	
 					retport = iter->newport;
@@ -251,7 +247,7 @@ int get_outflow_map_port(struct map_list *list, __be32 oldaddr, __be16 oldp, __b
 	if (retport == 0 && reusing == 0) {		
 		__be16 rover_j, rover_k;	
 		int dsthash, i, rand_j, chance;
-		struct hlist_node *loop0, *temp0;
+		struct hlist_node *loop0;
 		
 		status = 0;
 		chance = UDP_MAX_LOOP_NUM;
@@ -271,14 +267,14 @@ int get_outflow_map_port(struct map_list *list, __be32 oldaddr, __be16 oldp, __b
 		
 		for (i = 0; i < 31 && chance > 0; i++) {		
 			if (!hlist_empty(&list->dest_chain[hash])) {
-				hlist_for_each_entry_safe(multiplex_state, loop0, temp0, &list->dest_chain[hash], dest_node) {
+				hlist_for_each_entry_safe(multiplex_state, loop0, &list->dest_chain[hash], dest_node) {
 					retport = multiplex_state->newport;
 					status = 1;
 					
 					/* don't worry:) we have to check whether this port has been multiplexed by another 
 					   connection with the same destination */
 					if (!hlist_empty(&list->dest_chain[dsthash])) {
-						hlist_for_each_entry_safe(iter, loop, temp, &list->dest_chain[dsthash], dest_node) {
+						hlist_for_each_entry_safe(iter, loop, &list->dest_chain[dsthash], dest_node) {
 							if (iter->dstaddr == dstaddr && iter->newport == retport) {
 								status = 0; // this port cannot be multiplexed
 								break;
@@ -392,7 +388,6 @@ out:
 int get_inflow_map_port(struct map_list *list, __be16 newp, __be32 dstaddr, __be32* oldaddr, __be16 *oldp)
 {
 	struct map_tuple *iter;
-	struct hlist_node *temp;
 	int ret, hash;
 		
 	refresh_map_list(list);
@@ -403,7 +398,7 @@ int get_inflow_map_port(struct map_list *list, __be16 newp, __be32 dstaddr, __be
 	*oldaddr = 0;
 	
 	hash = port_hashfn(newp);
-	hlist_for_each_entry(iter, temp, &list->in_chain[hash], in_node) {
+	hlist_for_each_entry(iter, &list->in_chain[hash], in_node) {
 		if (iter->newport == newp && iter->dstaddr == dstaddr) {
 			*oldaddr = iter->oldaddr;
 			*oldp = iter->oldport;

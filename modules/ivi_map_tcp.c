@@ -791,8 +791,7 @@ void init_tcp_map_list(void)
 void refresh_tcp_map_list(int threshold)
 {
 	PTCP_STATE_CONTEXT iter, i0;
-	struct hlist_node *loop, *l0;
-	struct hlist_node *temp;
+	struct hlist_node *loop;
 	struct timeval now;
 	time_t delta;
 	int i, flag;
@@ -801,7 +800,7 @@ void refresh_tcp_map_list(int threshold)
 	spin_lock_bh(&tcp_list.lock);
 	// Iterate all the map_tuple through out_chain only, in_chain contains the same info.
 	for (i = 0; i < IVI_HTABLE_SIZE; i++) {
-		hlist_for_each_entry_safe(iter, loop, temp, &tcp_list.out_chain[i], out_node) {
+		hlist_for_each_entry_safe(iter, loop, &tcp_list.out_chain[i], out_node) {
 			delta = now.tv_sec - iter->StateSetTime.tv_sec;
 			//if (delta >= iter->StateTimeOut || iter->Status == TCP_STATUS_TIME_WAIT || iter->state_seq <= threshold) {
 			if (delta >= iter->StateTimeOut) {				
@@ -825,7 +824,7 @@ void refresh_tcp_map_list(int threshold)
 #endif
 
 				flag = 0; // indicating whether tcp_list.port_num needs to be substracted by 1.
- 				hlist_for_each_entry(i0, l0, &tcp_list.in_chain[port_hashfn(iter->newport)], in_node) {
+ 				hlist_for_each_entry(i0, &tcp_list.in_chain[port_hashfn(iter->newport)], in_node) {
  					if (i0->newport == iter->newport) {
  						flag = 1;
  											
@@ -858,14 +857,13 @@ void free_tcp_map_list(void)
 {
 	PTCP_STATE_CONTEXT iter;
 	struct hlist_node *loop;
-	struct hlist_node *temp;
 	int i;
 	
 	spin_lock_bh(&tcp_list.lock);
 	// Iterate all the map_tuple through out_chain only, in_chain contains the same info.
 	for (i = 0; i < IVI_HTABLE_SIZE; i++) {
 		if (!hlist_empty(&tcp_list.out_chain[i])) {
-			hlist_for_each_entry_safe(iter, loop, temp, &tcp_list.out_chain[i], out_node) {
+			hlist_for_each_entry_safe(iter, loop, &tcp_list.out_chain[i], out_node) {
 				hlist_del(&iter->out_node);
 				hlist_del(&iter->in_node);
 				hlist_del(&iter->dest_node);
@@ -889,11 +887,10 @@ static inline int tcp_port_in_use(__be16 port)
 	int ret = 0;
 	int hash;
 	PTCP_STATE_CONTEXT iter;
-	struct hlist_node *temp;
 
 	hash = port_hashfn(port);
 	if (!hlist_empty(&tcp_list.in_chain[hash])) {
-		hlist_for_each_entry(iter, temp, &tcp_list.in_chain[hash], in_node) {
+		hlist_for_each_entry(iter, &tcp_list.in_chain[hash], in_node) {
 			if (iter->newport == port) {
 				ret = 1;
 				break;
@@ -1024,7 +1021,6 @@ static inline int tcp_dest_multiplex_port(u32 dstaddr, u16 dstp)
 {
 	int status, chance, i, rand_j, dsthash, hash, retport;
 	PTCP_STATE_CONTEXT iter, multiplex_state;
-	struct hlist_node *loop0, *loop;
 	
 	status = 0;
 	chance = TCP_MAX_LOOP_NUM;
@@ -1043,14 +1039,14 @@ static inline int tcp_dest_multiplex_port(u32 dstaddr, u16 dstp)
 		
 	for (i = 0; i < 31 && chance > 0; i++) {	
 		if (!hlist_empty(&tcp_list.dest_chain[hash])) {
-			hlist_for_each_entry(multiplex_state, loop0, &tcp_list.dest_chain[hash], dest_node) {
+			hlist_for_each_entry(multiplex_state, &tcp_list.dest_chain[hash], dest_node) {
 				retport = multiplex_state->newport;
 				status = 1;
 					
 				/* don't worry:) we have to check whether this port has been multiplexed by another 
 				   connection with the same destination */
 				if (!hlist_empty(&tcp_list.dest_chain[dsthash])) {
-					hlist_for_each_entry(iter, loop, &tcp_list.dest_chain[dsthash], dest_node) {
+					hlist_for_each_entry(iter, &tcp_list.dest_chain[dsthash], dest_node) {
 						if (iter->dstaddr == dstaddr && iter->dstport == dstp && iter->newport == retport) {
 							status = 0; // this port cannot be multiplexed
 							break;
@@ -1093,8 +1089,7 @@ int get_outflow_tcp_map_port(__be32 oldaddr, __be16 oldp, __be32 dstaddr, __be16
 	__be16 retport;
 	PTCP_STATE_CONTEXT StateContext;
 	PTCP_STATE_CONTEXT i0;
-	struct hlist_node *loop, *l0;
-	struct hlist_node *temp;
+	struct hlist_node *loop;
 	FILTER_STATUS ftState;
 		
 	retport = 0;
@@ -1110,7 +1105,7 @@ int get_outflow_tcp_map_port(__be32 oldaddr, __be16 oldp, __be32 dstaddr, __be16
 
 	hash = v4addr_port_hashfn(oldaddr, oldp);
 	if (!hlist_empty(&tcp_list.out_chain[hash])) {
-		hlist_for_each_entry_safe(StateContext, loop, temp, &tcp_list.out_chain[hash], out_node) {
+		hlist_for_each_entry_safe(StateContext, loop, &tcp_list.out_chain[hash], out_node) {
 			if (StateContext->oldport == oldp && StateContext->oldaddr == oldaddr) {
 				if (StateContext->dstaddr == dstaddr && StateContext->dstport == dstp) {
 					// Update state context.
@@ -1145,7 +1140,7 @@ int get_outflow_tcp_map_port(__be32 oldaddr, __be16 oldp, __be32 dstaddr, __be16
 						tcp_list.size--;
 						flag = 0; // indicating whether tcp_list.port_num needs to be substracted by 1.
 
-						hlist_for_each_entry(i0, l0, &tcp_list.in_chain[port_hashfn(StateContext->newport)], in_node) {
+						hlist_for_each_entry(i0, &tcp_list.in_chain[port_hashfn(StateContext->newport)], in_node) {
 							if (i0->newport == StateContext->newport) {
 								flag = 1;
 								
@@ -1263,8 +1258,7 @@ int get_inflow_tcp_map_port(__be16 newp, __be32 dstaddr,  __be16 dstp, struct tc
 {
 	FILTER_STATUS ftState;
 	PTCP_STATE_CONTEXT  StateContext = NULL, i0;
-	struct hlist_node  *loop, *l0;
-	struct hlist_node  *temp;
+	struct hlist_node  *loop;
 	int ret, hash, flag;
 	
 	refresh_tcp_map_list(0);
@@ -1274,7 +1268,7 @@ int get_inflow_tcp_map_port(__be16 newp, __be32 dstaddr,  __be16 dstp, struct tc
 	*oldaddr = 0;
 	
 	hash = port_hashfn(newp);
-	hlist_for_each_entry_safe(StateContext, loop, temp, &tcp_list.in_chain[hash], in_node) {
+	hlist_for_each_entry_safe(StateContext, loop, &tcp_list.in_chain[hash], in_node) {
 		// Found existing mapping info
 		if (StateContext->newport == newp && StateContext->dstaddr == dstaddr && StateContext->dstport == dstp)
 		{
@@ -1314,7 +1308,7 @@ int get_inflow_tcp_map_port(__be16 newp, __be32 dstaddr,  __be16 dstp, struct tc
 				tcp_list.size--;
 				
 				flag = 0; // indicating whether tcp_list.port_num needs to be substracted by 1.
- 				hlist_for_each_entry(i0, l0, &tcp_list.in_chain[port_hashfn(StateContext->newport)], in_node) {
+ 				hlist_for_each_entry(i0, &tcp_list.in_chain[port_hashfn(StateContext->newport)], in_node) {
  					if (i0->newport == StateContext->newport) {
  						flag = 1;
  						
