@@ -597,12 +597,11 @@ static void trie_rebalance(struct tnode *tn)
 static struct tleaf_info *find_leaf_info(struct tleaf *l, int plen)
 {
 	struct tleaf_info *p;
-	struct hlist_node *temp;
 	
 	if (!l) 
 		return NULL;
 		
-	hlist_for_each_entry(p, temp, &l->head, node) {
+	hlist_for_each_entry(p, &l->head, node) {
 		if (p->plen == plen)
 			return p;
 	}
@@ -614,12 +613,11 @@ static void insert_leaf_info(struct tleaf *l, struct tleaf_info *li)
 	struct tleaf_info *p = NULL;
 	struct tleaf_info *last = NULL;
 	struct hlist_head *head = &l->head;
-	struct hlist_node *temp;
 
 	if (hlist_empty(head)) {
 		hlist_add_head(&li->node, head);
 	} else {
-		hlist_for_each_entry(p, temp, head, node) {
+		hlist_for_each_entry(p, head, node) {
 			if (li->plen > p->plen)
 				break;
 
@@ -661,8 +659,7 @@ static int check_leaf(struct tleaf *l, t_key key, struct in6_addr *prefix6, int 
 {
 	struct tleaf_info *li;
 	struct hlist_head *head = &l->head;
-	struct hlist_node *temp;
-	hlist_for_each_entry(li, temp, head, node) {
+	hlist_for_each_entry(li, head, node) {
 		if (l->key == (key & li->mask_plen)) {
 			*prefix6 = li->prefix6;
 			if (plen4)
@@ -1066,12 +1063,12 @@ static struct tleaf *trie_next_leaf(struct tleaf *l)
 static void trie_flush_leaf(struct tleaf *l)
 {
 	struct tleaf_info *li = NULL;
-	struct hlist_node *loop, *temp;
+	struct hlist_node *loop;
 
 	if (!l)
 		return;
 
-	hlist_for_each_entry_safe(li, loop, temp, &l->head, node) {
+	hlist_for_each_entry_safe(li, loop, &l->head, node) {
 		hlist_del(&li->node);
 		tleaf_info_free(li);
 	}
